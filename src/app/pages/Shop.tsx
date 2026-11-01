@@ -5,7 +5,7 @@ import ProductCard from "../components/ProductCard";
 import { COLORS, type Product } from "../data";
 import { useProducts } from "../productContext";
 
-const TYPES   = ["T-shirts", "Shirts", "Jeans", "Shorts"];
+const TYPES   = ["T-shirts", "Shirts", "Jeans", "Shorts", "Hoodies", "Accessories"];
 const STYLES  = ["Casual", "Formal", "Party", "Gym"];
 const SORT_OPTIONS = ["Most Popular", "Newest", "Price: Low to High", "Price: High to Low"];
 
@@ -102,7 +102,7 @@ function Sidebar({ onClose, onApply, initial }: {
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-xl">Filters</span>
         <div className="flex gap-2">
-          <button onClick={() => setF({ types: [], styles: [], price: [0, 500], color: "" })} className="text-xs text-gray-500 hover:text-black">Reset</button>
+          <button onClick={() => setF({ types: [], styles: [], price: [0, 100000], color: "" })} className="text-xs text-gray-500 hover:text-black">Reset</button>
           {onClose && <button onClick={onClose}><X size={20} /></button>}
         </div>
       </div>
@@ -115,7 +115,7 @@ function Sidebar({ onClose, onApply, initial }: {
         </Section>
 
         <Section title="Price" open={open.price} onToggle={() => toggle("price")}>
-          <RangeSlider min={0} max={500} value={f.price} onChange={v => setF(p => ({ ...p, price: v }))} />
+          <RangeSlider min={0} max={100000} value={f.price} onChange={v => setF(p => ({ ...p, price: v }))} />
         </Section>
 
         <Section title="Colors" open={open.colors} onToggle={() => toggle("colors")}>
@@ -161,7 +161,8 @@ function applyFilters(products: Product[], f: Filters, q: string): Product[] {
     if (q && !p.name.toLowerCase().includes(q.toLowerCase())) return false;
     if (f.types.length && !f.types.includes(p.type)) return false;
     if (f.styles.length && !f.styles.includes(p.style) && !f.styles.includes(p.style2)) return false;
-    if (p.cost < f.price[0] || p.cost > f.price[1]) return false;
+    if (f.price[0] > 0 && p.cost < f.price[0]) return false;
+    if (f.price[1] < 100000 && p.cost > f.price[1]) return false;
     if (f.color && p.colors && !p.colors.includes(f.color)) return false;
     return true;
   });
@@ -180,7 +181,7 @@ export default function Shop() {
   const [filters, setFilters] = useState<Filters>({
     types: [],
     styles: styleParam ? [styleParam] : [],
-    price: [0, 500],
+    price: [0, 100000],
     color: "",
   });
 
@@ -202,7 +203,7 @@ export default function Shop() {
   }, []);
 
   const activeCount = filters.types.length + filters.styles.length + (filters.color ? 1 : 0) +
-    (filters.price[0] > 0 || filters.price[1] < 500 ? 1 : 0);
+    (filters.price[0] > 0 || filters.price[1] < 100000 ? 1 : 0);
 
   return (
     <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-16 py-6">
