@@ -27,8 +27,7 @@ const productSchema = new mongoose.Schema(
     place: { type: String, enum: ['shop', 'home', 'both'], default: 'both' },
     homeType: {
       type: String,
-      enum: ['newarrival', 'topselling', 'onsale', 'none', ''],
-      default: '',
+      default: 'newarrival',
     },
     description: { type: String, default: '' },
     colors: { type: [String], default: [] },

@@ -51,7 +51,7 @@ export default function ProductDetail() {
     addItem({
       id:       product.id,
       name:     product.name,
-      imgKey:   product.imgKey,
+      imgKey:   product.image || product.imgKey,
       cost:     salePrice ?? product.cost,
       color:    colorLabel,
       size:     selectedSize || "Any",
@@ -82,7 +82,7 @@ export default function ProductDetail() {
         {/* Image */}
         <div className="bg-[#F0EEED] rounded-2xl flex-shrink-0 w-full sm:w-[420px] lg:w-[500px] aspect-square overflow-hidden">
           <img
-            src={imgUrl(product.imgKey, 600, 600)}
+            src={imgUrl(product.image || product.imgKey, 600, 600)}
             alt={product.name}
             className="w-full h-full object-cover"
           />

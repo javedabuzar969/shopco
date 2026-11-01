@@ -30,9 +30,31 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-// Resilient native JSON body parser
+// Body parsers: express.json & express.urlencoded
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Resilient fallback parser only if req.body wasn't parsed yet
 app.use((req, res, next) => {
   if (req.method === 'GET' || req.method === 'HEAD') return next();
+
+  // If already parsed by Vercel or express.json, proceed immediately
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+    return next();
+  }
+  if (typeof req.body === 'string' && req.body.trim()) {
+    try {
+      req.body = JSON.parse(req.body);
+      return next();
+    } catch (e) {}
+  }
+
+  // If stream is already paused or ended, don't block
+  if (req.readableEnded || req._readableState?.ended) {
+    req.body = req.body || {};
+    return next();
+  }
+
   const contentType = req.headers['content-type'] || '';
   if (contentType.includes('application/json')) {
     let data = '';
@@ -40,25 +62,14 @@ app.use((req, res, next) => {
     req.on('data', (chunk) => { data += chunk; });
     req.on('end', () => {
       try {
-        req.body = data ? JSON.parse(data) : {};
-        next();
-      } catch (err) {
-        req.body = {};
-        next();
-      }
+        if (data) req.body = JSON.parse(data);
+      } catch (err) {}
+      req.body = req.body || {};
+      next();
     });
-  } else if (contentType.includes('application/x-www-form-urlencoded')) {
-    let data = '';
-    req.setEncoding('utf8');
-    req.on('data', (chunk) => { data += chunk; });
-    req.on('end', () => {
-      try {
-        req.body = Object.fromEntries(new URLSearchParams(data));
-        next();
-      } catch (err) {
-        req.body = {};
-        next();
-      }
+    req.on('error', () => {
+      req.body = req.body || {};
+      next();
     });
   } else {
     req.body = req.body || {};
@@ -300,8 +311,9 @@ app.post('/api/v1/products', async (req, res) => {
       stars: data.rating || data.stars || 5.0,
       image:
         data.image ||
+        data.imgKey ||
         'https://images.unsplash.com/photo-1661080561444-a0139edfc4f7?w=600&h=600&fit=crop&auto=format&q=80',
-      imgKey: data.imgKey || '1',
+      imgKey: data.image || data.imgKey || '1',
       colors: data.colors && data.colors.length ? data.colors : ['10', '9', '4'],
       sizes: data.sizes && data.sizes.length ? data.sizes : ['Small', 'Medium', 'Large', 'X-Large'],
     });
@@ -342,10 +354,24 @@ app.put('/api/v1/products/:id', async (req, res) => {
       updates.status = s === 0 ? 'Out of Stock' : s <= 10 ? 'Low Stock' : 'In Stock';
     }
 
+    if (updates.image) {
+      updates.imgKey = updates.image;
+    } else if (updates.imgKey) {
+      updates.image = updates.imgKey;
+    }
+
+    const idParam = req.params.id;
+    const query = {
+      $or: [
+        { id: idParam },
+        ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: idParam }] : [])
+      ]
+    };
+
     const updated = await Product.findOneAndUpdate(
-      { id: req.params.id },
+      query,
       { $set: updates },
-      { returnDocument: 'after' }
+      { new: true, returnDocument: 'after' }
     );
 
     if (!updated) return res.status(404).json({ error: 'Product not found' });
@@ -367,7 +393,14 @@ app.put('/api/v1/products/:id', async (req, res) => {
 // Delete product (from Dashboard)
 app.delete('/api/v1/products/:id', async (req, res) => {
   try {
-    const product = await Product.findOneAndDelete({ id: req.params.id });
+    const idParam = req.params.id;
+    const query = {
+      $or: [
+        { id: idParam },
+        ...(mongoose.Types.ObjectId.isValid(idParam) ? [{ _id: idParam }] : [])
+      ]
+    };
+    const product = await Product.findOneAndDelete(query);
     if (!product) return res.status(404).json({ error: 'Product not found' });
 
     // Decrement category count

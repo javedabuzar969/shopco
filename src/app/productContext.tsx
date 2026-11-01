@@ -31,19 +31,20 @@ export function ProductProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(data) && data.length > 0) {
           // Format products to match Product type interface
           const mapped: Product[] = data.map((item: any) => ({
-            id: item.id,
+            id: item.id || item._id,
             name: item.name,
             sku: item.sku,
-            imgKey: item.imgKey || "1",
+            imgKey: item.image || item.imgKey || "1",
+            image: item.image || item.imgKey || "",
             place: item.place || "shop",
-            homeType: item.homeType,
+            homeType: item.homeType || "newarrival",
             style: item.style || "Casual",
             style2: item.style2 || "",
             type: item.type || item.category || "T-shirts",
             stars: item.stars || item.rating || 4.5,
             cost: item.cost || item.price || 120,
             discount: item.discount || 0,
-            description: item.description,
+            description: item.description || "",
             colors: item.colors || ["10", "9", "4"],
           }));
           setProducts(mapped);

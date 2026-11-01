@@ -16,7 +16,7 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       <div className="bg-[#F0EEED] rounded-2xl overflow-hidden aspect-square">
         <img
-          src={imgUrl(product.imgKey, 400, 400)}
+          src={imgUrl(product.image || product.imgKey, 400, 400)}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />

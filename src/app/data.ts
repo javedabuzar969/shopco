@@ -47,7 +47,7 @@ export const IMG: Record<string, string> = {
 
 export function imgUrl(key: string, w = 400, h = 400) {
   if (!key) return `https://images.unsplash.com/${IMG["1"]}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
-  if (key.startsWith("http://") || key.startsWith("https://")) return key;
+  if (key.startsWith("http://") || key.startsWith("https://") || key.startsWith("data:")) return key;
   const id = IMG[key] ?? IMG["1"];
   return `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&auto=format&q=80`;
 }
