@@ -11,7 +11,7 @@ type Props = {
   discount: number;
 };
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+const API_BASE = "/api/v1"; // Vite proxy (local) & Vercel serverless (production)
 
 export default function CheckoutModal({ isOpen, onClose, onSuccess, discount }: Props) {
   const { user } = useAuth();
