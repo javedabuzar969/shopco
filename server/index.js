@@ -201,7 +201,17 @@ app.post('/api/v1/auth/login', async (req, res) => {
 app.get('/api/v1/customers', async (req, res) => {
   try {
     const customers = await Customer.find().sort({ createdAt: -1 });
-    res.json(customers);
+    // Normalize field names: add aliases the dashboard UI expects
+    const normalized = customers.map((c) => {
+      const obj = c.toObject();
+      return {
+        ...obj,
+        registrationDate: obj.joinedDate || obj.registrationDate || '',  // dashboard reads cust.registrationDate
+        totalOrders: obj.ordersCount ?? obj.totalOrders ?? 0,             // dashboard reads cust.totalOrders
+        totalSpending: obj.totalSpent ?? obj.totalSpending ?? 0,          // dashboard reads cust.totalSpending
+      };
+    });
+    res.json(normalized);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -389,7 +399,17 @@ app.delete('/api/v1/products/:id', async (req, res) => {
 app.get('/api/v1/orders', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
-    res.json(orders);
+    // Normalize field names: add aliases the dashboard UI expects
+    const normalized = orders.map((o) => {
+      const obj = o.toObject();
+      return {
+        ...obj,
+        total: obj.totalAmount ?? obj.total ?? 0,           // dashboard reads order.total
+        orderStatus: obj.orderStatus || 'Pending',
+        paymentStatus: obj.paymentStatus || 'Pending',
+      };
+    });
+    res.json(normalized);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -492,7 +512,8 @@ app.patch('/api/v1/orders/:id/status', async (req, res) => {
       time: 'Just now',
     });
 
-    res.json(order);
+    const obj = order.toObject();
+    res.json({ ...obj, total: obj.totalAmount ?? obj.total ?? 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
